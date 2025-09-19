@@ -32,6 +32,7 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from "@/components/ui/radio-group";
+import { Textarea } from "@/components/ui/textarea";
 
 // Define the type for items with prices
 interface OrderItem {
@@ -56,9 +57,10 @@ const allItems = [
 ];
 
 const formSchema = z.object({
-  pickupAddress: z.string().min(10, { message: "Please enter a valid pickup address." }),
-  deliveryAddress: z.string().min(10, { message: "Please enter a valid delivery address." }),
-  pincode: z.string().regex(/^\d{5,6}$/, { message: "Please enter a valid pincode." }),
+  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  email: z.string().email({ message: "Please enter a valid email." }),
+  phone: z.string().min(10, { message: "Please enter a valid phone number." }),
+  address: z.string().min(10, { message: "Please enter a valid address." }),
   paymentMethod: z.enum(["card", "paypal", "cash"], {
     required_error: "Please select a payment method.",
   }),
@@ -76,9 +78,10 @@ export default function OrderPage() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      pickupAddress: "",
-      deliveryAddress: "",
-      pincode: "",
+      name: "",
+      email: "",
+      phone: "",
+      address: "",
     },
   });
 
@@ -195,7 +198,7 @@ export default function OrderPage() {
         <CardHeader>
             <CardTitle>Payment Details</CardTitle>
             <CardDescription>
-            Enter your address and choose a payment method.
+            Enter your details and choose a payment method.
             </CardDescription>
         </CardHeader>
         <CardContent>
@@ -204,13 +207,13 @@ export default function OrderPage() {
                 
                 <FormField
                 control={form.control}
-                name="pickupAddress"
+                name="name"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Pickup Address</FormLabel>
+                    <FormLabel>Full Name</FormLabel>
                     <FormControl>
                         <Input
-                        placeholder="123 Pickup St, Fresh City"
+                        placeholder="John Doe"
                         {...field}
                         />
                     </FormControl>
@@ -220,13 +223,14 @@ export default function OrderPage() {
                 />
                 <FormField
                 control={form.control}
-                name="deliveryAddress"
+                name="email"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Delivery Address</FormLabel>
+                    <FormLabel>Email Address</FormLabel>
                     <FormControl>
                         <Input
-                        placeholder="456 Delivery Ave, Clean Town"
+                        type="email"
+                        placeholder="you@example.com"
                         {...field}
                         />
                     </FormControl>
@@ -236,12 +240,25 @@ export default function OrderPage() {
                 />
                 <FormField
                 control={form.control}
-                name="pincode"
+                name="phone"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Pincode</FormLabel>
+                    <FormLabel>Phone Number</FormLabel>
                     <FormControl>
-                        <Input placeholder="12345" {...field} />
+                        <Input placeholder="(123) 456-7890" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Address</FormLabel>
+                    <FormControl>
+                        <Textarea placeholder="123 Pickup St, Fresh City, 12345" {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
