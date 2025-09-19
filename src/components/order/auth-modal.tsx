@@ -47,7 +47,6 @@ const registerSchema = z.object({
 });
 
 export type UserProfileData = Omit<z.infer<typeof registerSchema>, 'password'>;
-export type UserRegistrationData = z.infer<typeof registerSchema>;
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -126,13 +125,7 @@ export default function AuthModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]" onPointerDownOutside={(e) => {
-          e.preventDefault();
-          onOpenChange(false);
-      }} onInteractOutside={(e) => {
-          e.preventDefault();
-          onOpenChange(false);
-      }}>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Authentication Required</DialogTitle>
           <DialogDescription>

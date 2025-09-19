@@ -1,4 +1,3 @@
-
 // src/app/order/page.tsx
 "use client";
 
@@ -25,13 +24,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useEffect, useState } from "react";
-import { CreditCard, Loader2, Minus, Plus } from "lucide-react";
+import { CreditCard, Loader2, Minus, Plus, UserCheck } from "lucide-react";
 import { SERVICES, dryCleaningItems } from "@/lib/constants";
 import { Separator } from "@/components/ui/separator";
 import {
   RadioGroup,
   RadioGroupItem,
 } from "@/components/ui/radio-group";
+import AuthModal, { UserProfileData } from "@/components/order/auth-modal";
+import { getAuth, onAuthStateChanged, User } from "firebase/auth";
+import { app, db } from "@/lib/firebase";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+
 
 // Define the type for items with prices
 interface OrderItem {
@@ -72,6 +76,11 @@ export default function OrderPage() {
   const [totalAmount, setTotalAmount] = useState(0);
   const [step, setStep] = useState<"order" | "payment">("order");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const [user, setUser] = useState<User | null>(null);
+  const [profileData, setProfileData] = useState<UserProfileData | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -81,6 +90,15 @@ export default function OrderPage() {
       pincode: "",
     },
   });
+
+  useEffect(() => {
+    const auth = getAuth(app);
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setIsAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
@@ -106,40 +124,64 @@ export default function OrderPage() {
       });
       return;
     }
-    setStep("payment");
+    if (!user) {
+        setIsAuthModalOpen(true);
+    } else {
+        setStep("payment");
+    }
+  };
+
+  const onAuthSuccess = (data: UserProfileData) => {
+    setProfileData(data);
+    setIsAuthModalOpen(false);
+    setStep('payment');
+    toast({
+        title: "Logged In Successfully!",
+        description: "You can now complete your order.",
+    });
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user) {
+      toast({ variant: "destructive", title: "Authentication Error", description: "You must be logged in to place an order."});
+      setIsAuthModalOpen(true);
+      return;
+    }
     setIsSubmitting(true);
-    console.log("Order submitted:", values);
+    
+    try {
+      const orderData = {
+        ...values,
+        userId: user.uid,
+        userEmail: user.email,
+        userName: profileData?.name || user.displayName,
+        cart: cart.filter(item => item.quantity > 0),
+        totalAmount,
+        status: "Placed",
+        createdAt: serverTimestamp(),
+      };
+      
+      const orderId = `${user.uid}-${Date.now()}`;
+      await setDoc(doc(db, "orders", orderId), orderData);
 
-    // Simulate an API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    toast({
-        title: "Order Placed Successfully!",
-        description: "Your order is confirmed. We will notify you about the pickup.",
-    });
-    form.reset();
-    setCart(allItems.map((item) => ({ ...item, quantity: 0 })));
-    setStep("order");
-    setIsSubmitting(false);
+      toast({
+          title: "Order Placed Successfully!",
+          description: "Your order is confirmed. We will notify you about the pickup.",
+      });
+      form.reset();
+      setCart(allItems.map((item) => ({ ...item, quantity: 0 })));
+      setStep("order");
+    } catch (error) {
+        console.error("Order submission failed:", error);
+        toast({ variant: "destructive", title: "Order Failed", description: "There was a problem submitting your order. Please try again."})
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
-  return (
-    <div className="container mx-auto px-4 py-16 sm:py-24">
-      <div className="text-center">
-        <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
-        {step === "order" ? "Create Your Order" : "Complete Your Payment"}
-        </h1>
-        <p className="mx-auto mt-4 max-w-2xl text-lg text-foreground/70">
-        {step === "order"
-            ? "Select your services and add them to your cart."
-            : "Please provide your address and payment details."}
-        </p>
-      </div>
-
-      {step === "order" && (
+  const renderContent = () => {
+    if (step === "order") {
+      return (
         <Card className="mx-auto mt-12 max-w-4xl">
         <CardHeader>
             <CardTitle>Select Services</CardTitle>
@@ -193,13 +235,16 @@ export default function OrderPage() {
             </p>
             </div>
             <Button size="lg" onClick={handleProceedToPayment}>
-            Proceed to Pay
+                {isAuthLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 
+                 user ? 'Proceed to Pay' : 'Login or Register to Continue' }
             </Button>
         </CardFooter>
         </Card>
-      )}
+      );
+    }
 
-      {step === "payment" && (
+    if (step === "payment" && user) {
+      return (
         <Card className="mx-auto mt-16 max-w-3xl">
         <CardHeader>
             <CardTitle>Payment Details</CardTitle>
@@ -317,7 +362,47 @@ export default function OrderPage() {
             </Form>
         </CardContent>
         </Card>
+      );
+    }
+    
+    // Fallback if user is somehow not logged in on payment step
+    if (step === 'payment' && !user) {
+        setStep('order');
+        setIsAuthModalOpen(true);
+        return null;
+    }
+
+    return null; // Should not happen
+  };
+
+
+  return (
+    <div className="container mx-auto px-4 py-16 sm:py-24">
+      <div className="text-center">
+        <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
+        {step === "order" ? "Create Your Order" : "Complete Your Payment"}
+        </h1>
+        <p className="mx-auto mt-4 max-w-2xl text-lg text-foreground/70">
+        {step === "order"
+            ? "Select your services and add them to your cart."
+            : "Please provide your address and payment details."}
+        </p>
+      </div>
+
+      {isAuthLoading && (
+        <div className="flex justify-center items-center mt-16">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <p className="ml-4 text-lg text-foreground/70">Checking your authentication status...</p>
+        </div>
       )}
+
+      {!isAuthLoading && renderContent()}
+
+      <AuthModal 
+        isOpen={isAuthModalOpen}
+        onOpenChange={setIsAuthModalOpen}
+        onAuthSuccess={onAuthSuccess}
+      />
     </div>
   );
 }
