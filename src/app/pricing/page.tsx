@@ -35,7 +35,7 @@ export default function PricingPage() {
 
         <Card>
             <CardHeader>
-                <CardTitle>Dry Cleaning Price List</CardTitle>
+                <CardTitle>Pricing List</CardTitle>
                 <CardDescription>Itemized pricing for our professional dry cleaning.</CardDescription>
             </CardHeader>
             <CardContent>
