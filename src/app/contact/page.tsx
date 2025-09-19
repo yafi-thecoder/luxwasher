@@ -78,7 +78,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                     <h2 className="text-xl font-semibold">Email Us</h2>
-                    <p className="text-foreground/70">contact@washcycle.com</p>
+                    <p className="text-foreground/70">contact@luxwasher.com</p>
                 </div>
             </div>
         </div>

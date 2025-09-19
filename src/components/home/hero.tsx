@@ -10,7 +10,7 @@ export default function Hero() {
             Laundry Day, Reimagined.
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-foreground/80 md:text-xl">
-            Tired of laundry chores? Let WashCycle handle it. We pick up your dirty laundry and deliver it back fresh, clean, and perfectly folded.
+            Tired of laundry chores? Let lux washer handle it. We pick up your dirty laundry and deliver it back fresh, clean, and perfectly folded.
             </p>
             <div className="mt-8">
             <Button asChild size="lg">

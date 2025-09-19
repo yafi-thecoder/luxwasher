@@ -72,7 +72,7 @@ export default function PricingPage() {
             <CardHeader>
               <CardTitle>Commercial Services</CardTitle>
               <CardDescription>
-                WashCycle provides tailored laundry solutions for businesses of all sizes.
+                lux washer provides tailored laundry solutions for businesses of all sizes.
                 We partner with hotels, gyms, spas, and more to provide reliable, high-quality commercial laundry services.
                 Contact us today for a personalized quote.
               </CardDescription>

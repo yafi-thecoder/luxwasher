@@ -17,7 +17,7 @@ export default function Header() {
         <div className="mr-4 flex items-center">
           <Link href="/" className="flex items-center gap-2">
             <WashingMachine className="h-6 w-6 text-primary" />
-            <span className="font-bold font-headline text-lg">WashCycle</span>
+            <span className="font-bold font-headline text-lg">lux washer</span>
           </Link>
         </div>
         <nav className="hidden items-center gap-6 text-sm md:flex">
@@ -49,7 +49,7 @@ export default function Header() {
               <div className="flex flex-col gap-6">
                  <Link href="/" className="flex items-center gap-2 mb-4">
                   <WashingMachine className="h-7 w-7 text-primary" />
-                  <span className="font-bold font-headline text-xl">WashCycle</span>
+                  <span className="font-bold font-headline text-xl">lux washer</span>
                 </Link>
                 {NAV_LINKS.map((link) => (
                   <Link
