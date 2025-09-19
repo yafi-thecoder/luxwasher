@@ -91,6 +91,12 @@ export default function OrderPage() {
   const useProfileAddress = form.watch("useProfileAddress");
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setIsAuthModalOpen(true);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
     if (useProfileAddress && userProfile) {
       form.setValue("pickupAddress", userProfile.pickupAddress);
       form.setValue("deliveryAddress", userProfile.deliveryAddress);
@@ -125,11 +131,7 @@ export default function OrderPage() {
       });
       return;
     }
-    if (!isAuthenticated) {
-      setIsAuthModalOpen(true);
-    } else {
-      setStep("payment");
-    }
+    setStep("payment");
   };
 
   function onSubmit(values: z.infer<typeof formSchema>) {
@@ -151,10 +153,9 @@ export default function OrderPage() {
     setIsAuthenticated(true);
     setIsAuthModalOpen(false);
     setUserProfile(data);
-    setStep("payment");
     toast({
       title: "Logged In!",
-      description: "You can now proceed with your payment.",
+      description: "You can now create your order.",
     });
   };
 
