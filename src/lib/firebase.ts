@@ -1,9 +1,9 @@
 // src/lib/firebase.ts
-import { initializeApp, getApps, getApp, FirebaseOptions } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
+import { getAuth, Auth } from "firebase/auth";
+import { getFirestore, Firestore } from "firebase/firestore";
 
-const firebaseConfig: FirebaseOptions = {
+const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
@@ -12,10 +12,28 @@ const firebaseConfig: FirebaseOptions = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Function to initialize Firebase
-// This pattern ensures that Firebase is initialized only once.
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+// This function ensures Firebase is initialized only once.
+function getFirebaseApp(): FirebaseApp {
+  if (getApps().length === 0) {
+    // Check if all required config values are present
+    if (
+      firebaseConfig.apiKey &&
+      firebaseConfig.authDomain &&
+      firebaseConfig.projectId
+    ) {
+      return initializeApp(firebaseConfig);
+    } else {
+        // This error will be caught by developers during development
+        // if they have not configured their .env.local file correctly.
+        throw new Error("Firebase config is not set. Please set it in .env.local");
+    }
+  }
+  return getApp();
+}
+
+
+const app = getFirebaseApp();
+const auth: Auth = getAuth(app);
+const db: Firestore = getFirestore(app);
 
 export { app, auth, db };
