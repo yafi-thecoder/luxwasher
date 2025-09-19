@@ -1,7 +1,7 @@
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getAuth, Auth } from "firebase/auth";
-import { getFirestore, Firestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore, Firestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -16,17 +16,22 @@ let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
 
-if (typeof window !== "undefined" && !getApps().length) {
-  // Initialize Firebase on the client side
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-} else if (getApps().length) {
-  // Use the existing app if it's already initialized
-  app = getApp();
-  auth = getAuth(app);
-  db = getFirestore(app);
+if (typeof window !== "undefined") {
+    if (!getApps().length) {
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        // Explicitly initialize Firestore with settings to prevent connection errors in dev
+        db = initializeFirestore(app, {
+          experimentalForceLongPolling: true,
+          useFetchStreams: false,
+        });
+    } else {
+        app = getApp();
+        auth = getAuth(app);
+        db = getFirestore(app);
+    }
 }
+
 
 // @ts-ignore - these will be defined on the client
 export { app, auth, db };
