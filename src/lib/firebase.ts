@@ -12,27 +12,8 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// This function ensures Firebase is initialized only once.
-function getFirebaseApp(): FirebaseApp {
-  if (getApps().length === 0) {
-    // Check if all required config values are present
-    if (
-      firebaseConfig.apiKey &&
-      firebaseConfig.authDomain &&
-      firebaseConfig.projectId
-    ) {
-      return initializeApp(firebaseConfig);
-    } else {
-        // This error will be caught by developers during development
-        // if they have not configured their .env.local file correctly.
-        throw new Error("Firebase config is not set. Please set it in .env.local");
-    }
-  }
-  return getApp();
-}
-
-
-const app = getFirebaseApp();
+// Initialize Firebase
+const app: FirebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth: Auth = getAuth(app);
 const db: Firestore = getFirestore(app);
 
