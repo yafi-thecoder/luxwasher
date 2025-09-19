@@ -1,7 +1,7 @@
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore, initializeFirestore } from "firebase/firestore";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   "projectId": "studio-3078109361-62573",
@@ -12,31 +12,9 @@ const firebaseConfig = {
   "messagingSenderId": "621977729749"
 };
 
-let app: FirebaseApp;
-
-// A function to initialize Firebase if it hasn't been already.
-function initializeFirebaseApp() {
-    if (!getApps().length) {
-        // Check if the config keys are placeholders. If so, don't initialize.
-        if (firebaseConfig.apiKey === "YOUR_API_KEY") {
-             console.error("Firebase configuration is not set. Please update src/lib/firebase.ts with your project's configuration.");
-             // Return a dummy app object in case of missing config to avoid crashes
-             return {} as FirebaseApp;
-        }
-        app = initializeApp(firebaseConfig);
-    } else {
-        app = getApp();
-    }
-    return app;
-}
-
-app = initializeFirebaseApp();
-
-
+// Initialize Firebase
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
-const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-  useFetchStreams: false,
-});
+const db = getFirestore(app);
 
 export { app, auth, db };
