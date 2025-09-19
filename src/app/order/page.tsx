@@ -14,7 +14,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -29,15 +28,10 @@ import { useEffect, useState } from "react";
 import { CreditCard, Loader2, Minus, Plus } from "lucide-react";
 import { SERVICES, dryCleaningItems } from "@/lib/constants";
 import { Separator } from "@/components/ui/separator";
-import AuthModal, { UserProfileData } from "@/components/order/auth-modal";
 import {
   RadioGroup,
   RadioGroupItem,
 } from "@/components/ui/radio-group";
-import { useRouter } from "next/navigation";
-import { getAuth, onAuthStateChanged, User } from "firebase/auth";
-import { doc, getDoc, collection, addDoc, serverTimestamp, getFirestore } from "firebase/firestore";
-import { app } from "@/lib/firebase";
 
 // Define the type for items with prices
 interface OrderItem {
@@ -72,16 +66,11 @@ const formSchema = z.object({
 
 export default function OrderPage() {
   const { toast } = useToast();
-  const router = useRouter();
   const [cart, setCart] = useState<OrderItem[]>(
     allItems.map((item) => ({ ...item, quantity: 0 }))
   );
   const [totalAmount, setTotalAmount] = useState(0);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
   const [step, setStep] = useState<"order" | "payment">("order");
-  const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
-  const [loadingAuth, setLoadingAuth] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -92,30 +81,6 @@ export default function OrderPage() {
       pincode: "",
     },
   });
-
-
-   useEffect(() => {
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setUser(user);
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists()) {
-          setUserProfile(userDoc.data() as UserProfileData);
-        }
-        setIsAuthModalOpen(false);
-      } else {
-        setUser(null);
-        setUserProfile(null);
-        setIsAuthModalOpen(true);
-      }
-      setLoadingAuth(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
 
   useEffect(() => {
     const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
@@ -145,282 +110,214 @@ export default function OrderPage() {
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user) {
-        toast({
-            variant: "destructive",
-            title: "Not Logged In",
-            description: "You must be logged in to place an order.",
-        });
-        return;
-    }
     setIsSubmitting(true);
-    try {
-        const db = getFirestore(app);
-        const orderData = {
-            userId: user.uid,
-            ...values,
-            orderItems: cart.filter(item => item.quantity > 0),
-            totalAmount,
-            status: "Placed",
-            createdAt: serverTimestamp(),
-        };
-        await addDoc(collection(db, "orders"), orderData);
+    console.log("Order submitted:", values);
 
-        toast({
-            title: "Order Placed Successfully!",
-            description: "Your order is confirmed. We will notify you about the pickup.",
-        });
-        form.reset();
-        setCart(allItems.map((item) => ({ ...item, quantity: 0 })));
-        setStep("order");
+    // Simulate an API call
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
-    } catch (error) {
-        console.error("Error placing order: ", error);
-        toast({
-            variant: "destructive",
-            title: "Order Failed",
-            description: "There was an error placing your order. Please try again.",
-        });
-    } finally {
-        setIsSubmitting(false);
-    }
-  }
-
-  const handleAuthSuccess = (data: UserProfileData) => {
-    setUserProfile(data);
-    setIsAuthModalOpen(false);
     toast({
-      title: "Logged In!",
-      description: "You can now create your order.",
+        title: "Order Placed Successfully!",
+        description: "Your order is confirmed. We will notify you about the pickup.",
     });
-  };
-  
-  const handleAuthModalClose = (open: boolean) => {
-    if (!open && !user) {
-      router.push('/');
-    } else {
-      setIsAuthModalOpen(open);
-    }
-  }
-
-  if (loadingAuth) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-        <h2 className="text-2xl font-semibold">Loading...</h2>
-        <p className="text-foreground/70">Checking your authentication status.</p>
-      </div>
-    );
+    form.reset();
+    setCart(allItems.map((item) => ({ ...item, quantity: 0 })));
+    setStep("order");
+    setIsSubmitting(false);
   }
 
   return (
     <div className="container mx-auto px-4 py-16 sm:py-24">
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onOpenChange={handleAuthModalClose}
-        onAuthSuccess={handleAuthSuccess}
-      />
-      
-      {!user ? (
-        <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
-          <h2 className="text-2xl font-semibold">Authentication Required</h2>
-          <p className="text-foreground/70">Please log in or register to continue.</p>
-        </div>
-      ) : (
-        <>
-            <div className="text-center">
-                <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
-                {step === "order" ? "Create Your Order" : "Complete Your Payment"}
-                </h1>
-                <p className="mx-auto mt-4 max-w-2xl text-lg text-foreground/70">
-                {step === "order"
-                    ? "Select your services and add them to your cart."
-                    : "Please provide your address and payment details."}
+      <div className="text-center">
+        <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
+        {step === "order" ? "Create Your Order" : "Complete Your Payment"}
+        </h1>
+        <p className="mx-auto mt-4 max-w-2xl text-lg text-foreground/70">
+        {step === "order"
+            ? "Select your services and add them to your cart."
+            : "Please provide your address and payment details."}
+        </p>
+      </div>
+
+      {step === "order" && (
+        <Card className="mx-auto mt-12 max-w-4xl">
+        <CardHeader>
+            <CardTitle>Select Services</CardTitle>
+            <CardDescription>
+            Choose the items you want to get serviced and set the quantity.
+            </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+            {cart.map((item) => (
+            <div
+                key={item.name}
+                className="flex items-center justify-between"
+            >
+                <div>
+                <p className="font-medium">{item.name}</p>
+                <p className="text-sm text-foreground/70">
+                    ${item.price.toFixed(2)}{" "}
+                    {item.type === "per-lb" ? "/ lb" : "/ item"}
                 </p>
+                </div>
+                <div className="flex items-center gap-2">
+                <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => handleQuantityChange(item.name, -1)}
+                >
+                    <Minus className="h-4 w-4" />
+                </Button>
+                <span className="w-10 text-center font-bold text-lg">
+                    {item.quantity}
+                </span>
+                <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => handleQuantityChange(item.name, 1)}
+                >
+                    <Plus className="h-4 w-4" />
+                </Button>
+                </div>
             </div>
-
-            {step === "order" && (
-                <Card className="mx-auto mt-12 max-w-4xl">
-                <CardHeader>
-                    <CardTitle>Select Services</CardTitle>
-                    <CardDescription>
-                    Choose the items you want to get serviced and set the quantity.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    {cart.map((item) => (
-                    <div
-                        key={item.name}
-                        className="flex items-center justify-between"
-                    >
-                        <div>
-                        <p className="font-medium">{item.name}</p>
-                        <p className="text-sm text-foreground/70">
-                            ${item.price.toFixed(2)}{" "}
-                            {item.type === "per-lb" ? "/ lb" : "/ item"}
-                        </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => handleQuantityChange(item.name, -1)}
-                        >
-                            <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="w-10 text-center font-bold text-lg">
-                            {item.quantity}
-                        </span>
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => handleQuantityChange(item.name, 1)}
-                        >
-                            <Plus className="h-4 w-4" />
-                        </Button>
-                        </div>
-                    </div>
-                    ))}
-                </CardContent>
-                <Separator />
-                <CardFooter className="flex flex-col items-end gap-4 p-6 bg-card/50">
-                    <div className="text-right">
-                    <p className="text-lg text-foreground/80">Total Amount:</p>
-                    <p className="text-3xl font-bold text-primary">
-                        ${totalAmount.toFixed(2)}
-                    </p>
-                    </div>
-                    <Button size="lg" onClick={handleProceedToPayment}>
-                    Proceed to Pay
-                    </Button>
-                </CardFooter>
-                </Card>
-            )}
-
-            {step === "payment" && (
-                <Card className="mx-auto mt-16 max-w-3xl">
-                <CardHeader>
-                    <CardTitle>Payment Details</CardTitle>
-                    <CardDescription>
-                    Enter your address and choose a payment method.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                        
-                        <FormField
-                        control={form.control}
-                        name="pickupAddress"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Pickup Address</FormLabel>
-                            <FormControl>
-                                <Input
-                                placeholder="123 Pickup St, Fresh City"
-                                {...field}
-                                />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-                        <FormField
-                        control={form.control}
-                        name="deliveryAddress"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Delivery Address</FormLabel>
-                            <FormControl>
-                                <Input
-                                placeholder="456 Delivery Ave, Clean Town"
-                                {...field}
-                                />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-                        <FormField
-                        control={form.control}
-                        name="pincode"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Pincode</FormLabel>
-                            <FormControl>
-                                <Input placeholder="12345" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-                        <FormField
-                        control={form.control}
-                        name="paymentMethod"
-                        render={({ field }) => (
-                            <FormItem className="space-y-3">
-                            <FormLabel>Payment Method</FormLabel>
-                            <FormControl>
-                                <RadioGroup
-                                onValueChange={field.onChange}
-                                defaultValue={field.value}
-                                className="flex flex-col space-y-2"
-                                >
-                                <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border p-4">
-                                    <FormControl>
-                                    <RadioGroupItem value="card" />
-                                    </FormControl>
-                                    <FormLabel className="font-normal w-full">
-                                    Credit/Debit Card
-                                    </FormLabel>
-                                </FormItem>
-                                <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border p-4">
-                                    <FormControl>
-                                    <RadioGroupItem value="paypal" />
-                                    </FormControl>
-                                    <FormLabel className="font-normal w-full">
-                                    PayPal
-                                    </FormLabel>
-                                </FormItem>
-                                <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border p-4">
-                                    <FormControl>
-                                    <RadioGroupItem value="cash" />
-                                    </FormControl>
-                                    <FormLabel className="font-normal w-full">
-                                    Cash on Delivery
-                                    </FormLabel>
-                                </FormItem>
-                                </RadioGroup>
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-                        <div className="flex justify-between items-center pt-4">
-                            <Button variant="outline" onClick={() => setStep('order')}>Back to Order</Button>
-                            <div className="text-right">
-                                <p className="text-sm text-foreground/70">Total to Pay</p>
-                                <p className="text-2xl font-bold text-primary">${totalAmount.toFixed(2)}</p>
-                            </div>
-                        </div>
-                        <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
-                            {isSubmitting ? (
-                                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                            ) : (
-                                <CreditCard className="mr-2 h-5 w-5" />
-                            )}
-                        Pay ${totalAmount.toFixed(2)}
-                        </Button>
-                    </form>
-                    </Form>
-                </CardContent>
-                </Card>
-            )}
-        </>
+            ))}
+        </CardContent>
+        <Separator />
+        <CardFooter className="flex flex-col items-end gap-4 p-6 bg-card/50">
+            <div className="text-right">
+            <p className="text-lg text-foreground/80">Total Amount:</p>
+            <p className="text-3xl font-bold text-primary">
+                ${totalAmount.toFixed(2)}
+            </p>
+            </div>
+            <Button size="lg" onClick={handleProceedToPayment}>
+            Proceed to Pay
+            </Button>
+        </CardFooter>
+        </Card>
       )}
 
+      {step === "payment" && (
+        <Card className="mx-auto mt-16 max-w-3xl">
+        <CardHeader>
+            <CardTitle>Payment Details</CardTitle>
+            <CardDescription>
+            Enter your address and choose a payment method.
+            </CardDescription>
+        </CardHeader>
+        <CardContent>
+            <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                
+                <FormField
+                control={form.control}
+                name="pickupAddress"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Pickup Address</FormLabel>
+                    <FormControl>
+                        <Input
+                        placeholder="123 Pickup St, Fresh City"
+                        {...field}
+                        />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="deliveryAddress"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Delivery Address</FormLabel>
+                    <FormControl>
+                        <Input
+                        placeholder="456 Delivery Ave, Clean Town"
+                        {...field}
+                        />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="pincode"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Pincode</FormLabel>
+                    <FormControl>
+                        <Input placeholder="12345" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="paymentMethod"
+                render={({ field }) => (
+                    <FormItem className="space-y-3">
+                    <FormLabel>Payment Method</FormLabel>
+                    <FormControl>
+                        <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex flex-col space-y-2"
+                        >
+                        <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border p-4">
+                            <FormControl>
+                            <RadioGroupItem value="card" />
+                            </FormControl>
+                            <FormLabel className="font-normal w-full">
+                            Credit/Debit Card
+                            </FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border p-4">
+                            <FormControl>
+                            <RadioGroupItem value="paypal" />
+                            </FormControl>
+                            <FormLabel className="font-normal w-full">
+                            PayPal
+                            </FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border p-4">
+                            <FormControl>
+                            <RadioGroupItem value="cash" />
+                            </FormControl>
+                            <FormLabel className="font-normal w-full">
+                            Cash on Delivery
+                            </FormLabel>
+                        </FormItem>
+                        </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <div className="flex justify-between items-center pt-4">
+                    <Button variant="outline" onClick={() => setStep('order')}>Back to Order</Button>
+                    <div className="text-right">
+                        <p className="text-sm text-foreground/70">Total to Pay</p>
+                        <p className="text-2xl font-bold text-primary">${totalAmount.toFixed(2)}</p>
+                    </div>
+                </div>
+                <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    ) : (
+                        <CreditCard className="mr-2 h-5 w-5" />
+                    )}
+                Pay ${totalAmount.toFixed(2)}
+                </Button>
+            </form>
+            </Form>
+        </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
