@@ -28,13 +28,16 @@ import { useEffect, useState } from "react";
 import { CreditCard, Loader2, Minus, Plus } from "lucide-react";
 import { SERVICES, dryCleaningItems } from "@/lib/constants";
 import { Separator } from "@/components/ui/separator";
-import AuthModal, { UserRegistrationData } from "@/components/order/auth-modal";
+import AuthModal, { UserProfileData } from "@/components/order/auth-modal";
 import {
   RadioGroup,
   RadioGroupItem,
 } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useRouter } from "next/navigation";
+import { auth, db } from "@/lib/firebase";
+import { onAuthStateChanged, User } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 
 // Define the type for items with prices
 interface OrderItem {
@@ -76,9 +79,10 @@ export default function OrderPage() {
   );
   const [totalAmount, setTotalAmount] = useState(0);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const [step, setStep] = useState<"order" | "payment">("order");
-  const [userProfile, setUserProfile] = useState<UserRegistrationData | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -92,11 +96,25 @@ export default function OrderPage() {
 
   const useProfileAddress = form.watch("useProfileAddress");
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      setIsAuthModalOpen(true);
-    }
-  }, [isAuthenticated]);
+   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setUser(user);
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          setUserProfile(userDoc.data() as UserProfileData);
+        }
+        setIsAuthModalOpen(false);
+      } else {
+        setUser(null);
+        setUserProfile(null);
+        setIsAuthModalOpen(true);
+      }
+      setLoadingAuth(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (useProfileAddress && userProfile) {
@@ -141,6 +159,7 @@ export default function OrderPage() {
         ...values,
         orderItems: cart.filter(item => item.quantity > 0),
         totalAmount,
+        userId: user?.uid,
     });
     toast({
       title: "Order Placed Successfully!",
@@ -151,10 +170,9 @@ export default function OrderPage() {
     setStep("order");
   }
 
-  const handleAuthSuccess = (data: UserRegistrationData) => {
-    setIsAuthenticated(true);
-    setIsAuthModalOpen(false);
+  const handleAuthSuccess = (data: UserProfileData) => {
     setUserProfile(data);
+    setIsAuthModalOpen(false);
     toast({
       title: "Logged In!",
       description: "You can now create your order.",
@@ -162,14 +180,22 @@ export default function OrderPage() {
   };
   
   const handleAuthModalClose = (open: boolean) => {
-    // Prevent closing the modal by clicking outside or pressing Esc
-    if (!open && !isAuthenticated) {
+    if (!open && !user) {
       router.push('/');
     } else {
       setIsAuthModalOpen(open);
     }
   }
 
+  if (loadingAuth) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+        <h2 className="text-2xl font-semibold">Loading...</h2>
+        <p className="text-foreground/70">Checking your authentication status.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-16 sm:py-24">
@@ -179,9 +205,8 @@ export default function OrderPage() {
         onAuthSuccess={handleAuthSuccess}
       />
       
-      {!isAuthenticated ? (
+      {!user ? (
         <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
           <h2 className="text-2xl font-semibold">Authentication Required</h2>
           <p className="text-foreground/70">Please log in or register to continue.</p>
         </div>

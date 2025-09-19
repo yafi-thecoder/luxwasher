@@ -29,6 +29,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { Textarea } from "../ui/textarea";
+import { auth, db } from "@/lib/firebase";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -44,12 +51,13 @@ const registerSchema = z.object({
   deliveryAddress: z.string().min(10, { message: "Please enter a delivery address." }),
 });
 
+export type UserProfileData = Omit<z.infer<typeof registerSchema>, 'password'>;
 export type UserRegistrationData = z.infer<typeof registerSchema>;
 
 interface AuthModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onAuthSuccess: (data: UserRegistrationData) => void;
+  onAuthSuccess: (data: UserProfileData) => void;
 }
 
 export default function AuthModal({
@@ -58,6 +66,7 @@ export default function AuthModal({
   onAuthSuccess,
 }: AuthModalProps) {
   const [activeTab, setActiveTab] = useState("login");
+  const { toast } = useToast();
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -69,24 +78,44 @@ export default function AuthModal({
     defaultValues: { name: "", email: "", phone: "", password: "", pickupAddress: "", deliveryAddress: "" },
   });
 
-  const handleLogin = (values: z.infer<typeof loginSchema>) => {
-    console.log("Login submitted", values);
-    // In a real app, you would handle authentication and fetch user data here
-    // For now, we'll pass some dummy data for a logged-in user
-    onAuthSuccess({
-        name: "John Doe",
-        email: values.email,
-        phone: "1234567890",
-        password: values.password,
-        pickupAddress: "123 Saved Pickup St",
-        deliveryAddress: "456 Saved Delivery Ave"
-    });
+  const handleLogin = async (values: z.infer<typeof loginSchema>) => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+      const user = userCredential.user;
+      
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (userDoc.exists()) {
+        onAuthSuccess(userDoc.data() as UserProfileData);
+      } else {
+        throw new Error("User data not found.");
+      }
+    } catch (error: any) {
+      console.error("Login failed:", error);
+      toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: error.message || "Please check your credentials and try again.",
+      });
+    }
   };
 
-  const handleRegister = (values: z.infer<typeof registerSchema>) => {
-    console.log("Register submitted", values);
-    // In a real app, you would handle registration here
-    onAuthSuccess(values);
+  const handleRegister = async (values: z.infer<typeof registerSchema>) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      const user = userCredential.user;
+
+      const { password, ...profileData } = values;
+
+      await setDoc(doc(db, "users", user.uid), profileData);
+      onAuthSuccess(profileData);
+    } catch (error: any) {
+      console.error("Registration failed:", error);
+      toast({
+        variant: "destructive",
+        title: "Registration Failed",
+        description: error.message || "An error occurred during registration. Please try again.",
+      });
+    }
   };
 
   return (
@@ -141,7 +170,8 @@ export default function AuthModal({
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full">
+                <Button type="submit" className="w-full" disabled={loginForm.formState.isSubmitting}>
+                  {loginForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Login
                 </Button>
               </form>
@@ -197,7 +227,7 @@ export default function AuthModal({
                   name="pickupAddress"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Pickup Address</FormLabel>
+                      <FormLabel>Default Pickup Address</FormLabel>
                       <FormControl>
                         <Textarea placeholder="Your pickup address" {...field} />
                       </FormControl>
@@ -210,7 +240,7 @@ export default function AuthModal({
                   name="deliveryAddress"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Delivery Address</FormLabel>
+                      <FormLabel>Default Delivery Address</FormLabel>
                       <FormControl>
                         <Textarea placeholder="Your delivery address" {...field} />
                       </FormControl>
@@ -231,7 +261,8 @@ export default function AuthModal({
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full">
+                <Button type="submit" className="w-full" disabled={registerForm.formState.isSubmitting}>
+                  {registerForm.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Create Account
                 </Button>
               </form>
