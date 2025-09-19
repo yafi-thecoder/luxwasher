@@ -6,9 +6,9 @@ import { getFirestore } from "firebase/firestore";
 const firebaseConfig = {
   "projectId": "studio-3078109361-62573",
   "appId": "1:621977729749:web:4fcf4da863e69d07e0c05c",
-  "apiKey": "AIzaSyBKDVhjEneU3jvQ4xp8X4f4odte8D8oiH8",
+  "storageBucket": "studio-3078109361-62573.appspot.com",
+  "apiKey": "AIzaSyAo29P_9exM3S1jKZAjB1gS0D1pD0_y45k",
   "authDomain": "studio-3078109361-62573.firebaseapp.com",
-  "measurementId": "",
   "messagingSenderId": "621977729749"
 };
 
