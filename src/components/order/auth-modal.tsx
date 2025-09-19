@@ -28,12 +28,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
-
-interface AuthModalProps {
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
-  onAuthSuccess: () => void;
-}
+import { Textarea } from "../ui/textarea";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -45,7 +40,17 @@ const registerSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
   phone: z.string().min(10, { message: "Please enter a valid phone number." }),
   password: z.string().min(8, { message: "Password must be at least 8 characters." }),
+  pickupAddress: z.string().min(10, { message: "Please enter a pickup address." }),
+  deliveryAddress: z.string().min(10, { message: "Please enter a delivery address." }),
 });
+
+export type UserRegistrationData = z.infer<typeof registerSchema>;
+
+interface AuthModalProps {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+  onAuthSuccess: (data: UserRegistrationData) => void;
+}
 
 export default function AuthModal({
   isOpen,
@@ -61,19 +66,27 @@ export default function AuthModal({
 
   const registerForm = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { name: "", email: "", phone: "", password: "" },
+    defaultValues: { name: "", email: "", phone: "", password: "", pickupAddress: "", deliveryAddress: "" },
   });
 
   const handleLogin = (values: z.infer<typeof loginSchema>) => {
     console.log("Login submitted", values);
-    // In a real app, you would handle authentication here
-    onAuthSuccess();
+    // In a real app, you would handle authentication and fetch user data here
+    // For now, we'll pass some dummy data for a logged-in user
+    onAuthSuccess({
+        name: "John Doe",
+        email: values.email,
+        phone: "1234567890",
+        password: values.password,
+        pickupAddress: "123 Saved Pickup St",
+        deliveryAddress: "456 Saved Delivery Ave"
+    });
   };
 
   const handleRegister = (values: z.infer<typeof registerSchema>) => {
     console.log("Register submitted", values);
     // In a real app, you would handle registration here
-    onAuthSuccess();
+    onAuthSuccess(values);
   };
 
   return (
@@ -132,7 +145,7 @@ export default function AuthModal({
             <Form {...registerForm}>
               <form
                 onSubmit={registerForm.handleSubmit(handleRegister)}
-                className="space-y-4 pt-4"
+                className="space-y-4 pt-4 max-h-[60vh] overflow-y-auto pr-2"
               >
                 <FormField
                   control={registerForm.control}
@@ -168,6 +181,32 @@ export default function AuthModal({
                       <FormLabel>Phone Number</FormLabel>
                       <FormControl>
                         <Input placeholder="(123) 456-7890" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={registerForm.control}
+                  name="pickupAddress"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Pickup Address</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Your pickup address" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={registerForm.control}
+                  name="deliveryAddress"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Delivery Address</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Your delivery address" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

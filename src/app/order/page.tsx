@@ -28,11 +28,12 @@ import { useEffect, useState } from "react";
 import { CreditCard, Minus, Plus } from "lucide-react";
 import { SERVICES, dryCleaningItems } from "@/lib/constants";
 import { Separator } from "@/components/ui/separator";
-import AuthModal from "@/components/order/auth-modal";
+import AuthModal, { UserRegistrationData } from "@/components/order/auth-modal";
 import {
   RadioGroup,
   RadioGroupItem,
 } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Define the type for items with prices
 interface OrderItem {
@@ -57,11 +58,13 @@ const allItems = [
 ];
 
 const formSchema = z.object({
-  address: z.string().min(10, { message: "Please enter a valid address." }),
+  pickupAddress: z.string().min(10, { message: "Please enter a valid pickup address." }),
+  deliveryAddress: z.string().min(10, { message: "Please enter a valid delivery address." }),
   pincode: z.string().regex(/^\d{5,6}$/, { message: "Please enter a valid pincode." }),
   paymentMethod: z.enum(["card", "paypal", "cash"], {
     required_error: "Please select a payment method.",
   }),
+  useProfileAddress: z.boolean().default(false).optional(),
 });
 
 export default function OrderPage() {
@@ -73,14 +76,30 @@ export default function OrderPage() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [step, setStep] = useState<"order" | "payment">("order");
+  const [userProfile, setUserProfile] = useState<UserRegistrationData | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      address: "",
+      pickupAddress: "",
+      deliveryAddress: "",
       pincode: "",
+      useProfileAddress: false,
     },
   });
+
+  const useProfileAddress = form.watch("useProfileAddress");
+
+  useEffect(() => {
+    if (useProfileAddress && userProfile) {
+      form.setValue("pickupAddress", userProfile.pickupAddress);
+      form.setValue("deliveryAddress", userProfile.deliveryAddress);
+    } else {
+        // an option to clear when unchecked
+        // form.setValue("pickupAddress", "");
+        // form.setValue("deliveryAddress", "");
+    }
+  }, [useProfileAddress, userProfile, form]);
 
   useEffect(() => {
     const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
@@ -128,9 +147,10 @@ export default function OrderPage() {
     setStep("order");
   }
 
-  const handleAuthSuccess = () => {
+  const handleAuthSuccess = (data: UserRegistrationData) => {
     setIsAuthenticated(true);
     setIsAuthModalOpen(false);
+    setUserProfile(data);
     setStep("payment");
     toast({
       title: "Logged In!",
@@ -227,15 +247,52 @@ export default function OrderPage() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                {userProfile && (
+                     <FormField
+                     control={form.control}
+                     name="useProfileAddress"
+                     render={({ field }) => (
+                       <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                         <FormControl>
+                           <Checkbox
+                             checked={field.value}
+                             onCheckedChange={field.onChange}
+                           />
+                         </FormControl>
+                         <div className="space-y-1 leading-none">
+                           <FormLabel>
+                             Use my saved pickup and delivery addresses
+                           </FormLabel>
+                         </div>
+                       </FormItem>
+                     )}
+                   />
+                )}
                 <FormField
                   control={form.control}
-                  name="address"
+                  name="pickupAddress"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Full Address</FormLabel>
+                      <FormLabel>Pickup Address</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="123 Clean St, Fresh City"
+                          placeholder="123 Pickup St, Fresh City"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="deliveryAddress"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Delivery Address</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="456 Delivery Ave, Clean Town"
                           {...field}
                         />
                       </FormControl>
