@@ -28,7 +28,6 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
-import { Textarea } from "../ui/textarea";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
@@ -45,8 +44,6 @@ const registerSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
   phone: z.string().min(10, { message: "Please enter a valid phone number." }),
   password: z.string().min(8, { message: "Password must be at least 8 characters." }),
-  pickupAddress: z.string().min(10, { message: "Please enter a pickup address." }),
-  deliveryAddress: z.string().min(10, { message: "Please enter a delivery address." }),
 });
 
 export type UserProfileData = Omit<z.infer<typeof registerSchema>, 'password'>;
@@ -73,7 +70,7 @@ export default function AuthModal({
 
   const registerForm = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { name: "", email: "", phone: "", password: "", pickupAddress: "", deliveryAddress: "" },
+    defaultValues: { name: "", email: "", phone: "", password: "" },
   });
 
   const handleLogin = async (values: z.infer<typeof loginSchema>) => {
@@ -87,7 +84,14 @@ export default function AuthModal({
       if (userDoc.exists()) {
         onAuthSuccess(userDoc.data() as UserProfileData);
       } else {
-        throw new Error("User data not found.");
+        // If user exists in Auth but not in Firestore, create a basic profile
+        const basicProfile = {
+            name: user.displayName || 'User',
+            email: user.email!,
+            phone: user.phoneNumber || ''
+        }
+        await setDoc(doc(db, "users", user.uid), basicProfile);
+        onAuthSuccess(basicProfile);
       }
     } catch (error: any) {
       console.error("Login failed:", error);
@@ -219,32 +223,6 @@ export default function AuthModal({
                       <FormLabel>Phone Number</FormLabel>
                       <FormControl>
                         <Input placeholder="(123) 456-7890" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={registerForm.control}
-                  name="pickupAddress"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Default Pickup Address</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="Your pickup address" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={registerForm.control}
-                  name="deliveryAddress"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Default Delivery Address</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="Your delivery address" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

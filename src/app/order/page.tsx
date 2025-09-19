@@ -34,7 +34,6 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useRouter } from "next/navigation";
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import { doc, getDoc, collection, addDoc, serverTimestamp, getFirestore } from "firebase/firestore";
@@ -69,7 +68,6 @@ const formSchema = z.object({
   paymentMethod: z.enum(["card", "paypal", "cash"], {
     required_error: "Please select a payment method.",
   }),
-  useProfileAddress: z.boolean().default(false).optional(),
 });
 
 export default function OrderPage() {
@@ -92,11 +90,9 @@ export default function OrderPage() {
       pickupAddress: "",
       deliveryAddress: "",
       pincode: "",
-      useProfileAddress: false,
     },
   });
 
-  const useProfileAddress = form.watch("useProfileAddress");
 
    useEffect(() => {
     const auth = getAuth(app);
@@ -120,17 +116,6 @@ export default function OrderPage() {
 
     return () => unsubscribe();
   }, []);
-
-  useEffect(() => {
-    if (useProfileAddress && userProfile) {
-      form.setValue("pickupAddress", userProfile.pickupAddress);
-      form.setValue("deliveryAddress", userProfile.deliveryAddress);
-    } else {
-        // an option to clear when unchecked
-        // form.setValue("pickupAddress", "");
-        // form.setValue("deliveryAddress", "");
-    }
-  }, [useProfileAddress, userProfile, form]);
 
   useEffect(() => {
     const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
@@ -325,27 +310,7 @@ export default function OrderPage() {
                 <CardContent>
                     <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                        {userProfile && (
-                            <FormField
-                            control={form.control}
-                            name="useProfileAddress"
-                            render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                                <FormControl>
-                                <Checkbox
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                />
-                                </FormControl>
-                                <div className="space-y-1 leading-none">
-                                <FormLabel>
-                                    Use my saved pickup and delivery addresses
-                                </FormLabel>
-                                </div>
-                            </FormItem>
-                            )}
-                        />
-                        )}
+                        
                         <FormField
                         control={form.control}
                         name="pickupAddress"
