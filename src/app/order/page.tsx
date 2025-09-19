@@ -60,7 +60,8 @@ const formSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   email: z.string().email({ message: "Please enter a valid email." }),
   phone: z.string().min(10, { message: "Please enter a valid phone number." }),
-  address: z.string().min(10, { message: "Please enter a valid address." }),
+  pickupAddress: z.string().min(10, { message: "Please enter a valid pickup address." }),
+  dropAddress: z.string().min(10, { message: "Please enter a valid drop-off address." }),
   paymentMethod: z.enum(["card", "paypal", "cash"], {
     required_error: "Please select a payment method.",
   }),
@@ -81,7 +82,8 @@ export default function OrderPage() {
       name: "",
       email: "",
       phone: "",
-      address: "",
+      pickupAddress: "",
+      dropAddress: "",
     },
   });
 
@@ -253,12 +255,25 @@ export default function OrderPage() {
                 />
                 <FormField
                 control={form.control}
-                name="address"
+                name="pickupAddress"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Address</FormLabel>
+                    <FormLabel>Pickup Address</FormLabel>
                     <FormControl>
                         <Textarea placeholder="123 Pickup St, Fresh City, 12345" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="dropAddress"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Drop Address</FormLabel>
+                    <FormControl>
+                        <Textarea placeholder="456 Drop Ave, Clean Town, 54321" {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
