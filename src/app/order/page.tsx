@@ -1,3 +1,4 @@
+
 // src/app/order/page.tsx
 "use client";
 
@@ -34,7 +35,7 @@ import {
 import AuthModal, { UserProfileData } from "@/components/order/auth-modal";
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import { app, db } from "@/lib/firebase";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
 
 
 // Define the type for items with prices
@@ -93,8 +94,16 @@ export default function OrderPage() {
 
   useEffect(() => {
     const auth = getAuth(app);
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+        if (userDoc.exists()) {
+          setProfileData(userDoc.data() as UserProfileData);
+        }
+      } else {
+        setProfileData(null);
+      }
       setIsAuthLoading(false);
     });
     return () => unsubscribe();
@@ -253,6 +262,11 @@ export default function OrderPage() {
             </CardDescription>
         </CardHeader>
         <CardContent>
+            <div className="mb-6 space-y-2 rounded-md border bg-card/50 p-4">
+                <h3 className="font-semibold">Account Details</h3>
+                <p className="text-sm text-foreground/80">Name: <span className="font-medium">{profileData?.name}</span></p>
+                <p className="text-sm text-foreground/80">Email: <span className="font-medium">{user.email}</span></p>
+            </div>
             <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                 
