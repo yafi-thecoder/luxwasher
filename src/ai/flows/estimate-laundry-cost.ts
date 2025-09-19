@@ -2,7 +2,7 @@
 'use server';
 
 /**
- * @fileOverview Estimates the cost of laundry services based on weight, item descriptions, and material composition.
+ * @fileOverview Estimates the cost of laundry services based on pieces, item descriptions, and material composition.
  *
  * - estimateLaundryCost - A function that estimates the laundry cost.
  * - EstimateLaundryCostInput - The input type for the estimateLaundryCost function.
@@ -13,7 +13,7 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const EstimateLaundryCostInputSchema = z.object({
-  weight: z.number().describe('The weight of the laundry in kilograms.'),
+  pieces: z.number().describe('The number of laundry pieces.'),
   items: z.string().describe('A description of the laundry items.'),
   materialComposition: z.string().describe('The material composition of the laundry items.'),
 });
@@ -36,7 +36,7 @@ const prompt = ai.definePrompt({
   output: {schema: EstimateLaundryCostOutputSchema},
   prompt: `You are a laundry service cost estimator. Estimate the cost for the provided laundry details.
 
-Laundry Weight: {{weight}} kg
+Number of Pieces: {{pieces}}
 Item Descriptions: {{items}}
 Material Composition: {{materialComposition}}
 

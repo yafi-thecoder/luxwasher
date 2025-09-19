@@ -13,7 +13,7 @@ import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
-  weight: z.coerce.number().min(0.1, { message: "Weight must be greater than 0." }),
+  pieces: z.coerce.number().min(1, { message: "Please enter at least one piece." }),
   items: z.string().min(3, { message: "Please describe the items." }),
   materialComposition: z.string().min(3, { message: "Please describe the materials." }),
 });
@@ -26,7 +26,7 @@ export default function CostEstimator() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      weight: 10,
+      pieces: 10,
       items: "T-shirts, jeans, socks, and towels",
       materialComposition: "Mostly cotton, some polyester blends",
     },
@@ -72,10 +72,10 @@ export default function CostEstimator() {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="weight"
+                  name="pieces"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Weight (in kg)</FormLabel>
+                      <FormLabel>Number of Pieces</FormLabel>
                       <FormControl>
                         <Input type="number" placeholder="e.g., 10" {...field} />
                       </FormControl>
