@@ -25,7 +25,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useEffect, useState } from "react";
-import { CreditCard, Minus, Plus } from "lucide-react";
+import { CreditCard, Loader2, Minus, Plus } from "lucide-react";
 import { SERVICES, dryCleaningItems } from "@/lib/constants";
 import { Separator } from "@/components/ui/separator";
 import AuthModal, { UserRegistrationData } from "@/components/order/auth-modal";
@@ -158,220 +158,242 @@ export default function OrderPage() {
       description: "You can now create your order.",
     });
   };
+  
+  const handleAuthModalClose = (open: boolean) => {
+    // Prevent closing the modal by clicking outside or pressing Esc
+    if (!open && !isAuthenticated) {
+      setIsAuthModalOpen(true);
+    } else {
+      setIsAuthModalOpen(open);
+    }
+  }
+
 
   return (
     <div className="container mx-auto px-4 py-16 sm:py-24">
       <AuthModal
         isOpen={isAuthModalOpen}
-        onOpenChange={setIsAuthModalOpen}
+        onOpenChange={handleAuthModalClose}
         onAuthSuccess={handleAuthSuccess}
       />
-      <div className="text-center">
-        <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
-          {step === "order" ? "Create Your Order" : "Complete Your Payment"}
-        </h1>
-        <p className="mx-auto mt-4 max-w-2xl text-lg text-foreground/70">
-          {step === "order"
-            ? "Select your services and add them to your cart."
-            : "Please provide your address and payment details."}
-        </p>
-      </div>
-
-      {step === "order" && (
-        <Card className="mx-auto mt-12 max-w-4xl">
-          <CardHeader>
-            <CardTitle>Select Services</CardTitle>
-            <CardDescription>
-              Choose the items you want to get serviced and set the quantity.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {cart.map((item) => (
-              <div
-                key={item.name}
-                className="flex items-center justify-between"
-              >
-                <div>
-                  <p className="font-medium">{item.name}</p>
-                  <p className="text-sm text-foreground/70">
-                    ${item.price.toFixed(2)}{" "}
-                    {item.type === "per-lb" ? "/ lb" : "/ item"}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => handleQuantityChange(item.name, -1)}
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <span className="w-10 text-center font-bold text-lg">
-                    {item.quantity}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => handleQuantityChange(item.name, 1)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-          <Separator />
-          <CardFooter className="flex flex-col items-end gap-4 p-6 bg-card/50">
-            <div className="text-right">
-              <p className="text-lg text-foreground/80">Total Amount:</p>
-              <p className="text-3xl font-bold text-primary">
-                ${totalAmount.toFixed(2)}
-              </p>
+      
+      {!isAuthenticated ? (
+        <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+          <h2 className="text-2xl font-semibold">Authentication Required</h2>
+          <p className="text-foreground/70">Please log in or register to continue.</p>
+        </div>
+      ) : (
+        <>
+            <div className="text-center">
+                <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
+                {step === "order" ? "Create Your Order" : "Complete Your Payment"}
+                </h1>
+                <p className="mx-auto mt-4 max-w-2xl text-lg text-foreground/70">
+                {step === "order"
+                    ? "Select your services and add them to your cart."
+                    : "Please provide your address and payment details."}
+                </p>
             </div>
-            <Button size="lg" onClick={handleProceedToPayment}>
-              Proceed to Pay
-            </Button>
-          </CardFooter>
-        </Card>
+
+            {step === "order" && (
+                <Card className="mx-auto mt-12 max-w-4xl">
+                <CardHeader>
+                    <CardTitle>Select Services</CardTitle>
+                    <CardDescription>
+                    Choose the items you want to get serviced and set the quantity.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    {cart.map((item) => (
+                    <div
+                        key={item.name}
+                        className="flex items-center justify-between"
+                    >
+                        <div>
+                        <p className="font-medium">{item.name}</p>
+                        <p className="text-sm text-foreground/70">
+                            ${item.price.toFixed(2)}{" "}
+                            {item.type === "per-lb" ? "/ lb" : "/ item"}
+                        </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleQuantityChange(item.name, -1)}
+                        >
+                            <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-10 text-center font-bold text-lg">
+                            {item.quantity}
+                        </span>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleQuantityChange(item.name, 1)}
+                        >
+                            <Plus className="h-4 w-4" />
+                        </Button>
+                        </div>
+                    </div>
+                    ))}
+                </CardContent>
+                <Separator />
+                <CardFooter className="flex flex-col items-end gap-4 p-6 bg-card/50">
+                    <div className="text-right">
+                    <p className="text-lg text-foreground/80">Total Amount:</p>
+                    <p className="text-3xl font-bold text-primary">
+                        ${totalAmount.toFixed(2)}
+                    </p>
+                    </div>
+                    <Button size="lg" onClick={handleProceedToPayment}>
+                    Proceed to Pay
+                    </Button>
+                </CardFooter>
+                </Card>
+            )}
+
+            {step === "payment" && (
+                <Card className="mx-auto mt-16 max-w-3xl">
+                <CardHeader>
+                    <CardTitle>Payment Details</CardTitle>
+                    <CardDescription>
+                    Enter your address and choose a payment method.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                        {userProfile && (
+                            <FormField
+                            control={form.control}
+                            name="useProfileAddress"
+                            render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                                <FormControl>
+                                <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                />
+                                </FormControl>
+                                <div className="space-y-1 leading-none">
+                                <FormLabel>
+                                    Use my saved pickup and delivery addresses
+                                </FormLabel>
+                                </div>
+                            </FormItem>
+                            )}
+                        />
+                        )}
+                        <FormField
+                        control={form.control}
+                        name="pickupAddress"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Pickup Address</FormLabel>
+                            <FormControl>
+                                <Input
+                                placeholder="123 Pickup St, Fresh City"
+                                {...field}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                        <FormField
+                        control={form.control}
+                        name="deliveryAddress"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Delivery Address</FormLabel>
+                            <FormControl>
+                                <Input
+                                placeholder="456 Delivery Ave, Clean Town"
+                                {...field}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                        <FormField
+                        control={form.control}
+                        name="pincode"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Pincode</FormLabel>
+                            <FormControl>
+                                <Input placeholder="12345" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                        <FormField
+                        control={form.control}
+                        name="paymentMethod"
+                        render={({ field }) => (
+                            <FormItem className="space-y-3">
+                            <FormLabel>Payment Method</FormLabel>
+                            <FormControl>
+                                <RadioGroup
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                                className="flex flex-col space-y-2"
+                                >
+                                <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border p-4">
+                                    <FormControl>
+                                    <RadioGroupItem value="card" />
+                                    </FormControl>
+                                    <FormLabel className="font-normal w-full">
+                                    Credit/Debit Card
+                                    </FormLabel>
+                                </FormItem>
+                                <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border p-4">
+                                    <FormControl>
+                                    <RadioGroupItem value="paypal" />
+                                    </FormControl>
+                                    <FormLabel className="font-normal w-full">
+                                    PayPal
+                                    </FormLabel>
+                                </FormItem>
+                                <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border p-4">
+                                    <FormControl>
+                                    <RadioGroupItem value="cash" />
+                                    </FormControl>
+                                    <FormLabel className="font-normal w-full">
+                                    Cash on Delivery
+                                    </FormLabel>
+                                </FormItem>
+                                </RadioGroup>
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                        <div className="flex justify-between items-center pt-4">
+                            <Button variant="outline" onClick={() => setStep('order')}>Back to Order</Button>
+                            <div className="text-right">
+                                <p className="text-sm text-foreground/70">Total to Pay</p>
+                                <p className="text-2xl font-bold text-primary">${totalAmount.toFixed(2)}</p>
+                            </div>
+                        </div>
+                        <Button type="submit" className="w-full" size="lg">
+                        <CreditCard className="mr-2 h-5 w-5" />
+                        Pay ${totalAmount.toFixed(2)}
+                        </Button>
+                    </form>
+                    </Form>
+                </CardContent>
+                </Card>
+            )}
+        </>
       )}
 
-      {step === "payment" && (
-        <Card className="mx-auto mt-16 max-w-3xl">
-          <CardHeader>
-            <CardTitle>Payment Details</CardTitle>
-            <CardDescription>
-              Enter your address and choose a payment method.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                {userProfile && (
-                     <FormField
-                     control={form.control}
-                     name="useProfileAddress"
-                     render={({ field }) => (
-                       <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                         <FormControl>
-                           <Checkbox
-                             checked={field.value}
-                             onCheckedChange={field.onChange}
-                           />
-                         </FormControl>
-                         <div className="space-y-1 leading-none">
-                           <FormLabel>
-                             Use my saved pickup and delivery addresses
-                           </FormLabel>
-                         </div>
-                       </FormItem>
-                     )}
-                   />
-                )}
-                <FormField
-                  control={form.control}
-                  name="pickupAddress"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Pickup Address</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="123 Pickup St, Fresh City"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="deliveryAddress"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Delivery Address</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="456 Delivery Ave, Clean Town"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="pincode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Pincode</FormLabel>
-                      <FormControl>
-                        <Input placeholder="12345" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="paymentMethod"
-                  render={({ field }) => (
-                    <FormItem className="space-y-3">
-                      <FormLabel>Payment Method</FormLabel>
-                      <FormControl>
-                        <RadioGroup
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          className="flex flex-col space-y-2"
-                        >
-                          <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border p-4">
-                            <FormControl>
-                              <RadioGroupItem value="card" />
-                            </FormControl>
-                            <FormLabel className="font-normal w-full">
-                              Credit/Debit Card
-                            </FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border p-4">
-                            <FormControl>
-                              <RadioGroupItem value="paypal" />
-                            </FormControl>
-                            <FormLabel className="font-normal w-full">
-                              PayPal
-                            </FormLabel>
-                          </FormItem>
-                           <FormItem className="flex items-center space-x-3 space-y-0 rounded-md border p-4">
-                            <FormControl>
-                              <RadioGroupItem value="cash" />
-                            </FormControl>
-                            <FormLabel className="font-normal w-full">
-                              Cash on Delivery
-                            </FormLabel>
-                          </FormItem>
-                        </RadioGroup>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="flex justify-between items-center pt-4">
-                    <Button variant="outline" onClick={() => setStep('order')}>Back to Order</Button>
-                    <div className="text-right">
-                        <p className="text-sm text-foreground/70">Total to Pay</p>
-                        <p className="text-2xl font-bold text-primary">${totalAmount.toFixed(2)}</p>
-                    </div>
-                </div>
-                 <Button type="submit" className="w-full" size="lg">
-                  <CreditCard className="mr-2 h-5 w-5" />
-                  Pay ${totalAmount.toFixed(2)}
-                </Button>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
