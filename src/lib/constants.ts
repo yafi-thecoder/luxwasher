@@ -39,10 +39,17 @@ export const SERVICES = [
 export const dryCleaningItems = [
     { item: "Suit (2-piece)", price: "$25.00" },
     { item: "Blouse / Shirt", price: "$7.50" },
+    { item: "T-shirt", price: "$5.00" },
     { item: "Dress", price: "$15.00" },
+    { item: "Gown", price: "$30.00" },
     { item: "Pants / Trousers", price: "$8.00" },
     { item: "Jacket / Blazer", price: "$12.00" },
     { item: "Coat", price: "$20.00" },
+    { item: "Saree", price: "$25.00" },
+    { item: "Chudithar Top / Kurta", price: "$15.00" },
+    { item: "Lehanga (2 pc)", price: "$25.00" },
+    { item: "Lehanga (3 pc)", price: "$30.00" },
+    { item: "Shawl", price: "$5.00" },
   ];
 
 type HowItWorksStep = {

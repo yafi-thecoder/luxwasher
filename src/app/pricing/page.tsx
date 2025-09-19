@@ -1,15 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { SERVICES } from "@/lib/constants";
-
-const dryCleaningItems = [
-    { item: "Suit (2-piece)", price: "$25.00" },
-    { item: "Blouse / Shirt", price: "$7.50" },
-    { item: "Dress", price: "$15.00" },
-    { item: "Pants / Trousers", price: "$8.00" },
-    { item: "Jacket / Blazer", price: "$12.00" },
-    { item: "Coat", price: "$20.00" },
-  ];
+import { SERVICES, dryCleaningItems } from "@/lib/constants";
 
 export default function PricingPage() {
   return (
