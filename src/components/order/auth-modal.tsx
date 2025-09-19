@@ -29,14 +29,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { Textarea } from "../ui/textarea";
-import { auth, db } from "@/lib/firebase";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-} from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { app } from "@/lib/firebase";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -81,6 +78,8 @@ export default function AuthModal({
 
   const handleLogin = async (values: z.infer<typeof loginSchema>) => {
     try {
+      const auth = getAuth(app);
+      const db = getFirestore(app);
       const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
       
@@ -102,6 +101,8 @@ export default function AuthModal({
 
   const handleRegister = async (values: z.infer<typeof registerSchema>) => {
     try {
+      const auth = getAuth(app);
+      const db = getFirestore(app);
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
 

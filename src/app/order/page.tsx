@@ -36,9 +36,9 @@ import {
 } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useRouter } from "next/navigation";
-import { auth, db } from "@/lib/firebase";
-import { onAuthStateChanged, User } from "firebase/auth";
-import { doc, getDoc, collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { getAuth, onAuthStateChanged, User } from "firebase/auth";
+import { doc, getDoc, collection, addDoc, serverTimestamp, getFirestore } from "firebase/firestore";
+import { app } from "@/lib/firebase";
 
 // Define the type for items with prices
 interface OrderItem {
@@ -99,6 +99,9 @@ export default function OrderPage() {
   const useProfileAddress = form.watch("useProfileAddress");
 
    useEffect(() => {
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUser(user);
@@ -167,6 +170,7 @@ export default function OrderPage() {
     }
     setIsSubmitting(true);
     try {
+        const db = getFirestore(app);
         const orderData = {
             userId: user.uid,
             ...values,
@@ -455,4 +459,3 @@ export default function OrderPage() {
     </div>
   );
 }
-

@@ -1,7 +1,7 @@
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
-import { getAuth, Auth } from "firebase/auth";
-import { getFirestore, initializeFirestore, Firestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { getFirestore, initializeFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -13,25 +13,44 @@ const firebaseConfig = {
 };
 
 let app: FirebaseApp;
-let auth: Auth;
-let db: Firestore;
 
-if (typeof window !== "undefined") {
+// Check if all required environment variables are defined
+const isConfigValid = 
+  firebaseConfig.apiKey &&
+  firebaseConfig.authDomain &&
+  firebaseConfig.projectId &&
+  firebaseConfig.storageBucket &&
+  firebaseConfig.messagingSenderId &&
+  firebaseConfig.appId;
+
+if (isConfigValid) {
     if (!getApps().length) {
         app = initializeApp(firebaseConfig);
-        auth = getAuth(app);
-        // Explicitly initialize Firestore with settings to prevent connection errors in dev
-        db = initializeFirestore(app, {
-          experimentalForceLongPolling: true,
-          useFetchStreams: false,
-        });
     } else {
         app = getApp();
-        auth = getAuth(app);
-        db = getFirestore(app);
+    }
+} else {
+    console.error("Firebase configuration is missing or incomplete. Please check your environment variables.");
+    // Create a dummy app to avoid crashing the app on the server side
+    // or in environments where config is not available.
+    if (typeof window === 'undefined') {
+        app = {} as FirebaseApp;
+    } else {
+        // Handle client-side case where config is missing.
+        // You might want to show a message to the user.
+        if (!getApps().length) {
+          app = initializeApp({});
+        } else {
+          app = getApp();
+        }
     }
 }
 
 
-// @ts-ignore - these will be defined on the client
+const auth = getAuth(app);
+const db = isConfigValid ? initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+  useFetchStreams: false,
+}) : getFirestore(app);
+
 export { app, auth, db };
