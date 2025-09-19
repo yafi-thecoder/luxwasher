@@ -25,17 +25,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useEffect, useState } from "react";
-import { CreditCard, Loader2, Minus, Plus, User } from "lucide-react";
+import { CreditCard, Loader2, Minus, Plus } from "lucide-react";
 import { SERVICES, dryCleaningItems } from "@/lib/constants";
 import { Separator } from "@/components/ui/separator";
 import {
   RadioGroup,
   RadioGroupItem,
 } from "@/components/ui/radio-group";
-import AuthModal, { UserProfileData } from "@/components/order/auth-modal";
-import { getAuth, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
-import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
-import { app } from "@/lib/firebase";
 
 // Define the type for items with prices
 interface OrderItem {
@@ -77,31 +73,6 @@ export default function OrderPage() {
   const [step, setStep] = useState<"order" | "payment">("order");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
-  const [authStatus, setAuthStatus] = useState<"loading" | "authed" | "unauthed">("loading");
-
-  useEffect(() => {
-    const auth = getAuth(app);
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setCurrentUser(user);
-        const db = getFirestore(app);
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists()) {
-          setUserProfile(userDoc.data() as UserProfileData);
-        }
-        setAuthStatus("authed");
-      } else {
-        setCurrentUser(null);
-        setUserProfile(null);
-        setAuthStatus("unauthed");
-      }
-    });
-    return () => unsubscribe();
-  }, []);
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -135,64 +106,24 @@ export default function OrderPage() {
       });
       return;
     }
-
-    if (authStatus === "unauthed") {
-      setIsAuthModalOpen(true);
-    } else if (authStatus === "authed") {
-      setStep("payment");
-    }
-  };
-  
-  const handleAuthSuccess = (data: UserProfileData) => {
-    setUserProfile(data);
-    setIsAuthModalOpen(false);
     setStep("payment");
   };
-
+  
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!currentUser) {
-      toast({
-        variant: "destructive",
-        title: "Authentication Error",
-        description: "You must be logged in to place an order.",
-      });
-      return;
-    }
-
     setIsSubmitting(true);
     
-    try {
-      const db = getFirestore(app);
-      const orderData = {
-        userId: currentUser.uid,
-        ...values,
-        cart: cart.filter(item => item.quantity > 0),
-        totalAmount,
-        orderDate: new Date().toISOString(),
-        status: "Placed",
-      };
-      
-      const orderId = `${currentUser.uid}-${Date.now()}`;
-      await setDoc(doc(db, "orders", orderId), orderData);
-      
-      toast({
-          title: "Order Placed Successfully!",
-          description: "Your order is confirmed. We will notify you about the pickup.",
-      });
-      
-      form.reset();
-      setCart(allItems.map((item) => ({ ...item, quantity: 0 })));
-      setStep("order");
-    } catch (error) {
-      console.error("Order submission failed:", error);
-      toast({
-        variant: "destructive",
-        title: "Order Failed",
-        description: "There was an error submitting your order. Please try again.",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Simulate an API call
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    toast({
+        title: "Order Placed Successfully!",
+        description: "Your order is confirmed. We will notify you about the pickup.",
+    });
+    
+    form.reset();
+    setCart(allItems.map((item) => ({ ...item, quantity: 0 })));
+    setStep("order");
+    setIsSubmitting(false);
   }
 
   const renderContent = () => {
@@ -250,9 +181,8 @@ export default function OrderPage() {
                 ${totalAmount.toFixed(2)}
             </p>
             </div>
-            <Button size="lg" onClick={handleProceedToPayment} disabled={authStatus === 'loading'}>
-                {authStatus === 'loading' && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                {authStatus === 'loading' ? 'Checking Status...' : authStatus === 'authed' ? 'Proceed to Pay' : 'Login or Register to Continue'}
+            <Button size="lg" onClick={handleProceedToPayment}>
+                Proceed to Pay
             </Button>
         </CardFooter>
         </Card>
@@ -269,19 +199,6 @@ export default function OrderPage() {
             </CardDescription>
         </CardHeader>
         <CardContent>
-            {userProfile && (
-              <div className="mb-6 rounded-md border bg-card/50 p-4">
-                <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                        <User className="h-5 w-5" />
-                    </div>
-                    <div>
-                        <p className="font-semibold">{userProfile.name}</p>
-                        <p className="text-sm text-foreground/70">{userProfile.email}</p>
-                    </div>
-                </div>
-              </div>
-            )}
             <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                 
@@ -400,11 +317,6 @@ export default function OrderPage() {
 
   return (
     <div className="container mx-auto px-4 py-16 sm:py-24">
-       <AuthModal
-        isOpen={isAuthModalOpen}
-        onOpenChange={setIsAuthModalOpen}
-        onAuthSuccess={handleAuthSuccess}
-      />
       <div className="text-center">
         <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
         {step === "order" ? "Create Your Order" : "Complete Your Payment"}
