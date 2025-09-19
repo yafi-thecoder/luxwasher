@@ -4,53 +4,39 @@ import { getAuth } from "firebase/auth";
 import { getFirestore, initializeFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID",
 };
 
 let app: FirebaseApp;
 
-// Check if all required environment variables are defined
-const isConfigValid = 
-  firebaseConfig.apiKey &&
-  firebaseConfig.authDomain &&
-  firebaseConfig.projectId &&
-  firebaseConfig.storageBucket &&
-  firebaseConfig.messagingSenderId &&
-  firebaseConfig.appId;
-
-if (isConfigValid) {
+// A function to initialize Firebase if it hasn't been already.
+function initializeFirebaseApp() {
     if (!getApps().length) {
+        // Check if the config keys are placeholders. If so, don't initialize.
+        if (firebaseConfig.apiKey === "YOUR_API_KEY") {
+             console.error("Firebase configuration is not set. Please update src/lib/firebase.ts with your project's configuration.");
+             // Return a dummy app object in case of missing config to avoid crashes
+             return {} as FirebaseApp;
+        }
         app = initializeApp(firebaseConfig);
     } else {
         app = getApp();
     }
-} else {
-    console.error("Firebase configuration is missing or incomplete. Please check your environment variables.");
-    // Create a dummy app to avoid crashing the app on the server side
-    // or in environments where config is not available.
-    if (typeof window === 'undefined') {
-        app = {} as FirebaseApp;
-    } else {
-        // Handle client-side case where config is missing.
-        // You might want to show a message to the user.
-        if (!getApps().length) {
-          app = initializeApp({});
-        } else {
-          app = getApp();
-        }
-    }
+    return app;
 }
+
+app = initializeFirebaseApp();
 
 
 const auth = getAuth(app);
-const db = isConfigValid ? initializeFirestore(app, {
+const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
   useFetchStreams: false,
-}) : getFirestore(app);
+});
 
 export { app, auth, db };
