@@ -13,25 +13,9 @@ const firebaseConfig: FirebaseOptions = {
 };
 
 // Function to initialize Firebase
-function initializeFirebase() {
-  if (
-    !firebaseConfig.apiKey ||
-    !firebaseConfig.authDomain ||
-    !firebaseConfig.projectId
-  ) {
-    console.error("Firebase config is not set. Please check your .env file.");
-    // Return null or throw an error if the config is not set.
-    // This prevents the app from trying to initialize Firebase without the necessary credentials.
-    return { app: null, auth: null, db: null };
-  }
-
-  const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-
-  return { app, auth, db };
-}
-
-const { app, auth, db } = initializeFirebase();
+// This pattern ensures that Firebase is initialized only once.
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 export { app, auth, db };
