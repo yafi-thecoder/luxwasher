@@ -19,7 +19,7 @@ export const SERVICES = [
   {
     title: "Dry Cleaning",
     description: "Expert care for your delicate garments. We use eco-friendly methods to leave your clothes fresh and clean.",
-    price: "Starts at $7.50/item",
+    price: "Custom Pricing", // This will be handled by itemized list
     turnaround: "2-3 business days",
   },
   {
@@ -31,10 +31,19 @@ export const SERVICES = [
   {
     title: "Bedding & Linens",
     description: "From comforters to duvet covers, we'll give your bulky items a deep clean for ultimate freshness.",
-    price: "Starts at $25.00/item",
+    price: "$25.00/item",
     turnaround: "2-3 business days",
   },
 ];
+
+export const dryCleaningItems = [
+    { item: "Suit (2-piece)", price: "$25.00" },
+    { item: "Blouse / Shirt", price: "$7.50" },
+    { item: "Dress", price: "$15.00" },
+    { item: "Pants / Trousers", price: "$8.00" },
+    { item: "Jacket / Blazer", price: "$12.00" },
+    { item: "Coat", price: "$20.00" },
+  ];
 
 type HowItWorksStep = {
   icon: LucideIcon;
