@@ -34,6 +34,7 @@ import {
   RadioGroupItem,
 } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useRouter } from "next/navigation";
 
 // Define the type for items with prices
 interface OrderItem {
@@ -69,6 +70,7 @@ const formSchema = z.object({
 
 export default function OrderPage() {
   const { toast } = useToast();
+  const router = useRouter();
   const [cart, setCart] = useState<OrderItem[]>(
     allItems.map((item) => ({ ...item, quantity: 0 }))
   );
@@ -162,7 +164,7 @@ export default function OrderPage() {
   const handleAuthModalClose = (open: boolean) => {
     // Prevent closing the modal by clicking outside or pressing Esc
     if (!open && !isAuthenticated) {
-      setIsAuthModalOpen(true);
+      router.push('/');
     } else {
       setIsAuthModalOpen(open);
     }

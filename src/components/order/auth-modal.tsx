@@ -91,7 +91,13 @@ export default function AuthModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]" onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
+      <DialogContent className="sm:max-w-[425px]" onPointerDownOutside={(e) => {
+          e.preventDefault();
+          onOpenChange(false);
+      }} onInteractOutside={(e) => {
+          e.preventDefault();
+          onOpenChange(false);
+      }}>
         <DialogHeader>
           <DialogTitle>Authentication Required</DialogTitle>
           <DialogDescription>
