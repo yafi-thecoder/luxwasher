@@ -1,3 +1,4 @@
+
 // src/app/order/page.tsx
 "use client";
 
@@ -37,7 +38,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 // Define the type for items with prices
 interface OrderItem {
@@ -83,6 +84,7 @@ export default function OrderPage() {
   const [step, setStep] = useState<"order" | "payment">("order");
   const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -154,20 +156,45 @@ export default function OrderPage() {
     setStep("payment");
   };
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log({
-        ...values,
-        orderItems: cart.filter(item => item.quantity > 0),
-        totalAmount,
-        userId: user?.uid,
-    });
-    toast({
-      title: "Order Placed Successfully!",
-      description: "Your order is confirmed. We will notify you about the pickup.",
-    });
-    form.reset();
-    setCart(allItems.map((item) => ({ ...item, quantity: 0 })));
-    setStep("order");
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user) {
+        toast({
+            variant: "destructive",
+            title: "Not Logged In",
+            description: "You must be logged in to place an order.",
+        });
+        return;
+    }
+    setIsSubmitting(true);
+    try {
+        const orderData = {
+            userId: user.uid,
+            ...values,
+            orderItems: cart.filter(item => item.quantity > 0),
+            totalAmount,
+            status: "Placed",
+            createdAt: serverTimestamp(),
+        };
+        await addDoc(collection(db, "orders"), orderData);
+
+        toast({
+            title: "Order Placed Successfully!",
+            description: "Your order is confirmed. We will notify you about the pickup.",
+        });
+        form.reset();
+        setCart(allItems.map((item) => ({ ...item, quantity: 0 })));
+        setStep("order");
+
+    } catch (error) {
+        console.error("Error placing order: ", error);
+        toast({
+            variant: "destructive",
+            title: "Order Failed",
+            description: "There was an error placing your order. Please try again.",
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
   }
 
   const handleAuthSuccess = (data: UserProfileData) => {
@@ -409,8 +436,12 @@ export default function OrderPage() {
                                 <p className="text-2xl font-bold text-primary">${totalAmount.toFixed(2)}</p>
                             </div>
                         </div>
-                        <Button type="submit" className="w-full" size="lg">
-                        <CreditCard className="mr-2 h-5 w-5" />
+                        <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
+                            {isSubmitting ? (
+                                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                            ) : (
+                                <CreditCard className="mr-2 h-5 w-5" />
+                            )}
                         Pay ${totalAmount.toFixed(2)}
                         </Button>
                     </form>
@@ -424,3 +455,4 @@ export default function OrderPage() {
     </div>
   );
 }
+
